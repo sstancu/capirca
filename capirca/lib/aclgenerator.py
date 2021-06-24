@@ -240,6 +240,7 @@ class ACLGenerator(object):
   # Only warn if these tokens are not implemented by a platform. These are not
   # meant to be overridden in subclasses like supported tokens/sub tokens.
   WARN_IF_UNSUPPORTED = {
+      'restrict_address_family',
       'counter',
       'destination_tag',
       'logging',

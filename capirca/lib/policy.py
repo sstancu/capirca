@@ -313,6 +313,7 @@ class Term(object):
       VarType.(S|D)?ADDRESS's
     address_exclude/source_address_exclude/destination_address_exclude: list of
       VarType.(S|D)?ADDEXCLUDE's
+    restrict-address-family: VarType.RESTRICT_ADDRESS_FAMILY
     port/source_port/destination_port: list of VarType.(S|D)?PORT's
     options: list of VarType.OPTION's.
     protocol: list of VarType.PROTOCOL's.
@@ -414,6 +415,7 @@ class Term(object):
     self.action = []
     self.address = []
     self.address_exclude = []
+    self.restrict_address_family = None
     self.comment = []
     self.counter = None
     self.expiration = None
@@ -1181,7 +1183,9 @@ class Term(object):
                   type(x), x.value))
     else:
       # stupid no switch statement in python
-      if obj.var_type is VarType.COMMENT:
+      if obj.var_type is VarType.RESTRICT_ADDRESS_FAMILY:
+        self.restrict_address_family = obj.value
+      elif obj.var_type is VarType.COMMENT:
         self.comment.append(str(obj))
       elif obj.var_type is VarType.OWNER:
         self.owner = obj.value
@@ -1575,6 +1579,7 @@ class VarType(object):
   PAN_LOG_SETTING = 65
   PAN_SECURITY_PROFILE_GROUP = 62
   PAN_SOURCE_USER = 66
+  RESTRICT_ADDRESS_FAMILY = 67
 
   def __init__(self, var_type, value):
     self.var_type = var_type
@@ -1732,6 +1737,7 @@ tokens = (
     'ACTION',
     'ADDR',
     'ADDREXCLUDE',
+    'RESTRICT_ADDRESS_FAMILY',
     'COMMENT',
     'COUNTER',
     'DADDR',
@@ -1822,6 +1828,7 @@ reserved = {
     'action': 'ACTION',
     'address': 'ADDR',
     'address-exclude': 'ADDREXCLUDE',
+    'restrict-address-family': 'RESTRICT_ADDRESS_FAMILY',
     'comment': 'COMMENT',
     'counter': 'COUNTER',
     'destination-address': 'DADDR',
@@ -2013,6 +2020,7 @@ def p_terms(p):
 def p_term_spec(p):
   """ term_spec : term_spec action_spec
                 | term_spec addr_spec
+                | term_spec restrict_address_family_spec
                 | term_spec comment_spec
                 | term_spec counter_spec
                 | term_spec traffic_class_count_spec
@@ -2070,6 +2078,9 @@ def p_term_spec(p):
     else:
       p[0] = Term(p[2])
 
+def p_restrict_address_family_spec(p):
+  """ restrict_address_family_spec : RESTRICT_ADDRESS_FAMILY ':' ':' STRING """
+  p[0] = VarType(VarType.RESTRICT_ADDRESS_FAMILY, p[4])
 
 def p_routinginstance_spec(p):
   """ routinginstance_spec : ROUTING_INSTANCE ':' ':' STRING """

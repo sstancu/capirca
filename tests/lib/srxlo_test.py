@@ -103,6 +103,7 @@ SUPPORTED_TOKENS = {
     'protocol',
     'protocol_except',
     'qos',
+    'restrict_address_family',
     'routing_instance',
     'source_address',
     'source_address_exclude',
