@@ -274,16 +274,17 @@ class Rule(object):
         else:
           dst_ports.append(str(tup[0]))
 
-    if src_ports or dst_ports:
-      # convert to tuple so that they are usable as dict keys
-      src_ports = tuple(src_ports)
-      dst_ports = tuple(dst_ports)
-      for prot in term.protocol:
-        ports = (src_ports, dst_ports, prot)
-        if ports not in Service.service_map:
-          # create service
-          Service(src_ports, dst_ports, prot)
-        self.options["service"].append(Service.service_map[ports]["name"])
+    # Always retrieve a service based on src_ports and dst_ports, even if both are None,
+    # in which case they will get translated into a TCP/UDP ANY_TO_ANY service.
+    # convert to tuple so that they are usable as dict keys
+    src_ports = tuple(src_ports)
+    dst_ports = tuple(dst_ports)
+    for prot in term.protocol:
+      ports = (src_ports, dst_ports, prot)
+      if ports not in Service.service_map:
+        # create service
+        Service(src_ports, dst_ports, prot)
+      self.options["service"].append(Service.service_map[ports]["name"])
 
     if term.protocol:
       if term.protocol[0] == "icmp":
