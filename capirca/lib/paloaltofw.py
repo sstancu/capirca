@@ -311,18 +311,11 @@ class Rule(object):
           self.options["service"].append(service_name)
 
     if term.protocol:
-      # Add application "any" to all terms, unless ICMP/ICMPv6
+      # Add certain protocol names as application in the app list, if missing.
       for proto_name in term.protocol:
-        if proto_name in ["icmp", "icmpv6"]:
-          continue
-        elif proto_name in ["igmp", "sctp", "gre"]:
+        if proto_name in ["igmp", "sctp", "gre"]:
           if proto_name not in self.options["application"]:
             self.options["application"].append(proto_name)
-        elif proto_name in ["tcp", "udp"]:
-          if "any" not in self.options["application"]:
-            self.options["application"].append("any")
-        else:
-          pass
 
 
 class PaloAltoFW(aclgenerator.ACLGenerator):
