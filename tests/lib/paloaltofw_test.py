@@ -18,6 +18,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import sys
 import unittest
 
 from capirca.lib import aclgenerator
@@ -40,6 +41,14 @@ header {
   target:: paloalto from-zone all to-zone all
 }
 """
+
+GOOD_HEADER_3 = """
+header {
+  comment:: "This is a test acl with a comment"
+  target:: paloalto from-zone trust to-zone untrust mixed
+}
+"""
+
 BAD_HEADER_1 = """
 header {
   comment:: "This header has two address families"
@@ -471,6 +480,8 @@ PATH_VSYS = "./devices/entry[@name='localhost.localdomain']/vsys/entry[@name='vs
 PATH_RULES = PATH_VSYS + '/rulebase/security/rules'
 PATH_TAG = PATH_VSYS + '/tag'
 PATH_SERVICE = PATH_VSYS + '/service'
+PATH_ADDRESS = PATH_VSYS + '/address'
+PATH_ADDRESS_GROUP = PATH_VSYS + '/address-group'
 
 
 class PaloAltoFWTest(unittest.TestCase):
@@ -1029,6 +1040,34 @@ term rule-1 {
                                 "/entry[@name='rule-1']/service/member")
     services = {elem.text for elem in x}
     self.assertEqual({"ANY_TO_ANY_TCP", "ANY_TO_ANY_UDP"}, services, output)
+
+  def testParamRealAddressNames(self):
+    definitions = naming.Naming()
+    definitions._ParseLine('SOME_HOST = 192.168.10.1/32', 'networks')
+    definitions._ParseLine('            2001:4860:8000::/33', 'networks')
+    definitions._ParseLine('            10.0.0.0/8', 'networks')
+    definitions._ParseLine('            2001:4850:8000::/33', 'networks')
+
+    paloalto = paloaltofw.PaloAltoFW(
+        policy.ParsePolicy(GOOD_HEADER_3 + GOOD_TERM_2, definitions), EXP_INFO, immutable_address_names=True)
+    _ = str(paloalto)
+
+    address_groups = paloalto.config.findall(PATH_ADDRESS_GROUP + "/entry[@name='SOME_HOST']/static/member")
+    some_host_members = [group.text for group in address_groups]
+
+    addresses = paloalto.config.findall(PATH_ADDRESS + "/entry")
+    for entry in addresses:
+      # validate address entry name consists of the address value, and the entry is
+      # a member of the correct address group.
+      entry_name = entry.getchildren()[0].text
+      address_value = entry.getchildren()[1].text
+      self.assertEqual(entry_name, address_value.replace('.', '_').replace(':', '_').replace('/', '-'))
+      self.assertEqual(entry_name in some_host_members, True)
+
+    self.assertEqual(addresses[0].getchildren()[1].text.startswith('10.0'), True)
+    self.assertEqual(addresses[1].getchildren()[1].text.startswith('192'), True)
+    self.assertEqual(addresses[2].getchildren()[1].text.startswith('2001:4850'), True)
+    self.assertEqual(addresses[3].getchildren()[1].text.startswith('2001:4860'), True)
 
 
 if __name__ == '__main__':

@@ -129,6 +129,11 @@ def SetupFlags():
       'config_file',
       None,
       'A yaml file with the configuration options for capirca')
+  flags.DEFINE_boolean(
+      'immutable_address_names',
+      None,
+      'Use network address value as address name for platforms that support it.\n(default: \'%s\')'
+      % config.defaults['immutable_address_names'])
 
 
 class Error(Exception):
@@ -377,7 +382,9 @@ def RenderFile(base_directory, input_file, output_directory, definitions,
                 input_file, write_files)
 
     if paloalto:
-      acl_obj = paloaltofw.PaloAltoFW(paloalto, exp_info)
+      acl_obj = paloaltofw.PaloAltoFW(
+          paloalto, exp_info,
+          immutable_address_names=FLAGS.immutable_address_names)
       RenderACL(str(acl_obj), acl_obj.SUFFIX, output_directory,
                 input_file, write_files)
     if gca:

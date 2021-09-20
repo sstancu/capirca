@@ -18,6 +18,7 @@ import collections
 import datetime
 import logging
 import re
+
 from xml.dom import minidom
 import xml.etree.ElementTree as etree
 from capirca.lib import aclgenerator
@@ -341,7 +342,7 @@ class PaloAltoFW(aclgenerator.ACLGenerator):
 
   INDENT = "  "
 
-  def __init__(self, pol, exp_info):
+  def __init__(self, pol, exp_info, immutable_address_names=False):
     self.pafw_policies = []
     self.addressbook = collections.OrderedDict()
     self.applications = []
@@ -354,6 +355,7 @@ class PaloAltoFW(aclgenerator.ACLGenerator):
     self.policy_name = ""
     self.config = None
     self.service_map = ServiceMap()
+    self.use_immutable_address_names = immutable_address_names
     super(PaloAltoFW, self).__init__(pol, exp_info)
 
   def _BuildTokens(self):
@@ -722,8 +724,19 @@ class PaloAltoFW(aclgenerator.ACLGenerator):
     for ip in self.addressbook[zone][name]:
       if str(address) == str(ip[0]):
         return
-    counter = len(self.addressbook[zone][address.parent_token])
-    name = "%s_%s" % (name, str(counter))
+
+    if self.use_immutable_address_names:
+      # use address as the name of address-objects
+      name = str(address).replace('/', '-')
+      if address.version == 4:
+        name = name.replace('.', '_')
+      else:
+        name = name.replace(':', '_')
+    else:
+      # suffix address names of the same parent token with a running integer
+      counter = len(self.addressbook[zone][address.parent_token])
+      name = "%s_%s" % (name, str(counter))
+
     self.addressbook[zone][address.parent_token].append((address, name))
 
   def _SortAddressBookNumCheck(self, item):
@@ -802,8 +815,14 @@ class PaloAltoFW(aclgenerator.ACLGenerator):
       address_book_groups_dict = collections.OrderedDict(
           sorted(address_book_groups_dict.items()))
 
-    address_book_keys = sorted(
-        list(address_book_names_dict.keys()), key=self._SortAddressBookNumCheck)
+    if self.use_immutable_address_names:
+      # sort address entries first by address family, second by address value
+      name_addr_list = sorted(address_book_names_dict.items(), key=lambda x: (x[1].version, x[1]))
+      address_book_keys = [name for name, addr in name_addr_list]
+    else:
+      # sort address entries by integer suffix
+      address_book_keys = sorted(
+          list(address_book_names_dict.keys()), key=self._SortAddressBookNumCheck)
 
     split_address_groups = collections.defaultdict(dict)
 
