@@ -294,6 +294,15 @@ term pan-edl-term-1 {
 }
 """
 
+PAN_SOURCE_USER = """
+term pan-source-user-term {
+  protocol:: tcp
+  action:: accept
+  pan-source-user:: "test string for source-user"
+  pan-source-user:: "other string"
+}
+"""
+
 PAN_SECURITY_PROFILE_GROUP = """
 term pan-security-profile-term {
   protocol:: tcp
@@ -415,6 +424,7 @@ SUPPORTED_TOKENS = frozenset({
     'pan_destination_edl',
     'pan_source_edl',
     'pan_log_setting',
+    'pan_source_user',
     'pan_security_profile_group',
     'translated'
 })
@@ -692,6 +702,15 @@ class PaloAltoFWTest(unittest.TestCase):
     x = paloalto.config.findtext(PATH_RULES +
                                  "/entry[@name='test-accept-action']/action")
     self.assertEqual(x, 'allow', output)
+
+  def testPanSourceUser(self):
+    pol = policy.ParsePolicy(GOOD_HEADER_1 + PAN_SOURCE_USER, self.naming)
+    paloalto = paloaltofw.PaloAltoFW(pol, EXP_INFO)
+    output = str(paloalto)
+    x = paloalto.config.findtext(PATH_RULES + "/entry[@name='pan-source-user-term']/source-user/member[1]")
+    self.assertEqual("test string for source-user", x, output)
+    x = paloalto.config.findtext(PATH_RULES + "/entry[@name='pan-source-user-term']/source-user/member[2]")
+    self.assertEqual("other string", x, output)
 
   def testPanSecurityProfileGroup(self):
     pol = policy.ParsePolicy(GOOD_HEADER_1 + PAN_SECURITY_PROFILE_GROUP, self.naming)

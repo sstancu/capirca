@@ -337,6 +337,7 @@ class Term(object):
     pan-destination-edl: VarType.PAN_DESTINATION_EDL
     pan-source-edl: VarType.PAN_SOURCE_EDL
     pan-log-setting: VarType.PAN_LOG_SETTING
+    pan-source-user: VarType.PAN_SOURCE_USER
     pan-security-profile-group: VarType.PAN_SECURITY_PROFILE_GROUP
     policer: VarType.POLICER
     priority: VarType.PRIORITY
@@ -438,6 +439,7 @@ class Term(object):
     self.pan_destination_edl= []
     self.pan_source_edl= []
     self.pan_log_setting = []
+    self.pan_source_user = []
     self.pan_security_profile_group = []
     self.routing_instance = None
     self.source_address = []
@@ -763,6 +765,8 @@ class Term(object):
       ret_str.append('  pan_source_edl %s' % self.pan_source_edl)
     if self.pan_log_setting:
       ret_str.append('  pan_log_setting: %s' % self.pan_log_setting)
+    if self.pan_source_user:
+      ret_str.append('  pan_source_user: %s' % self.pan_source_user)
     if self.pan_security_profile_group:
       ret_str.append('  pan_security_profile_group: %s' % self.pan_security_profile_group)
     if self.logging:
@@ -866,6 +870,10 @@ class Term(object):
     if sorted(self.pan_log_setting) != sorted(other.pan_log_setting):
       return False
 
+    # pan-source-user
+    if sorted(self.pan_source_user) != sorted(other.pan_source_user):
+      return False
+
     # pan-security-profile-group
     if sorted(self.pan_security_profile_group) != sorted(other.pan_security_profile_group):
       return False
@@ -906,6 +914,8 @@ class Term(object):
     if sorted(self.pan_source_edl) != sorted(other.pan_source_edl):
       return False
     if sorted(self.pan_log_setting) != sorted(other.pan_log_setting):
+      return False
+    if sorted(self.pan_source_user) != sorted(other.pan_source_user):
       return False
     if sorted(self.pan_security_profile_group) != sorted(other.pan_security_profile_group):
       return False
@@ -1141,6 +1151,8 @@ class Term(object):
           self.pan_source_edl.append(x.value)
         elif x.var_type is VarType.PAN_LOG_SETTING:
           self.pan_log_setting.append(x.value)
+        elif x.var_type is VarType.PAN_SOURCE_USER:
+          self.pan_source_user.append(x.value)
         elif x.var_type is VarType.PAN_SECURITY_PROFILE_GROUP:
           self.pan_security_profile_group.append(x.value)
         elif x.var_type is VarType.NEXT_IP:
@@ -1193,6 +1205,8 @@ class Term(object):
         self.pan_source_edl.append(obj.value)
       elif obj.var_type is VarType.PAN_LOG_SETTING:
         self.pan_log_setting.append(obj.value)
+      elif obj.var_type is VarType.PAN_SOURCE_USER:
+        self.pan_source_user.append(obj.value)
       elif obj.var_type is VarType.PAN_SECURITY_PROFILE_GROUP:
         self.pan_security_profile_group.append(obj.value)
       elif obj.var_type is VarType.NEXT_IP:
@@ -1560,6 +1574,7 @@ class VarType(object):
   PAN_SOURCE_EDL = 64
   PAN_LOG_SETTING = 65
   PAN_SECURITY_PROFILE_GROUP = 62
+  PAN_SOURCE_USER = 66
 
   def __init__(self, var_type, value):
     self.var_type = var_type
@@ -1773,6 +1788,7 @@ tokens = (
     'PAN_DESTINATION_EDL',
     'PAN_SOURCE_EDL',
     'PAN_LOG_SETTING',
+    'PAN_SOURCE_USER',
     'PAN_SECURITY_PROFILE_GROUP',
     'ROUTING_INSTANCE',
     'SADDR',
@@ -1853,6 +1869,7 @@ reserved = {
     'pan-destination-edl': 'PAN_DESTINATION_EDL',
     'pan-source-edl': 'PAN_SOURCE_EDL',
     'pan-log-setting': 'PAN_LOG_SETTING',
+    'pan-source-user': 'PAN_SOURCE_USER',
     'pan-security-profile-group': 'PAN_SECURITY_PROFILE_GROUP',
     'routing-instance': 'ROUTING_INSTANCE',
     'source-address': 'SADDR',
@@ -2034,6 +2051,7 @@ def p_term_spec(p):
                 | term_spec pan_destination_edl_spec
                 | term_spec pan_source_edl_spec
                 | term_spec pan_log_setting_spec
+                | term_spec pan_source_user_spec
                 | term_spec pan_security_profile_group_spec
                 | term_spec routinginstance_spec
                 | term_spec tag_list_spec
@@ -2423,6 +2441,11 @@ def p_pan_log_setting_spec(p):
   p[0] = []
   for apps in p[4]:
     p[0].append(VarType(VarType.PAN_LOG_SETTING, apps))
+
+
+def p_pan_source_user_spec(p):
+  """ pan_source_user_spec : PAN_SOURCE_USER ':' ':' DQUOTEDSTRING """
+  p[0] = VarType(VarType.PAN_SOURCE_USER, p[4].replace('"', ''))
 
 
 def p_pan_security_profile_group_spec(p):
