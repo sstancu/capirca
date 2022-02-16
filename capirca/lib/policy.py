@@ -334,8 +334,8 @@ class Term(object):
     next-ip: VarType.NEXT_IP
     qos: VarType.QOS
     pan-application: VarType.PAN_APPLICATION
-    pan-destination-edl: VarType.PAN_DESTINATION_EDL
-    pan-source-edl: VarType.PAN_SOURCE_EDL
+    pan-destination-object: VarType.PAN_DESTINATION_OBJECT
+    pan-source-object: VarType.PAN_SOURCE_OBJECT
     pan-log-setting: VarType.PAN_LOG_SETTING
     pan-security-profile-group: VarType.PAN_SECURITY_PROFILE_GROUP
     policer: VarType.POLICER
@@ -435,8 +435,8 @@ class Term(object):
     self.protocol_except = []
     self.qos = None
     self.pan_application = []
-    self.pan_destination_edl= []
-    self.pan_source_edl= []
+    self.pan_destination_object= []
+    self.pan_source_object= []
     self.pan_log_setting = []
     self.pan_security_profile_group = []
     self.routing_instance = None
@@ -757,10 +757,10 @@ class Term(object):
       ret_str.append('  qos: %s' % self.qos)
     if self.pan_application:
       ret_str.append('  pan_application: %s' % self.pan_application)
-    if self.pan_destination_edl:
-      ret_str.append('  pan_destination_edl %s' % self.pan_destination_edl)
-    if self.pan_source_edl:
-      ret_str.append('  pan_source_edl %s' % self.pan_source_edl)
+    if self.pan_destination_object:
+      ret_str.append('  pan_destination_object %s' % self.pan_destination_object)
+    if self.pan_source_object:
+      ret_str.append('  pan_source_object %s' % self.pan_source_object)
     if self.pan_log_setting:
       ret_str.append('  pan_log_setting: %s' % self.pan_log_setting)
     if self.pan_security_profile_group:
@@ -854,12 +854,12 @@ class Term(object):
     if sorted(self.pan_application) != sorted(other.pan_application):
       return False
 
-    # pan-destination-edl
-    if sorted(self.pan_destination_edl) != sorted(other.pan_destination_edl):
+    # pan-destination-object
+    if sorted(self.pan_destination_object) != sorted(other.pan_destination_object):
       return False
 
-    # pan-source-edl
-    if sorted(self.pan_source_edl) != sorted(other.pan_source_edl):
+    # pan-source-object
+    if sorted(self.pan_source_object) != sorted(other.pan_source_object):
       return False
 
     # pan-log-setting
@@ -901,9 +901,9 @@ class Term(object):
       return False
     if sorted(self.pan_application) != sorted(other.pan_application):
       return False
-    if sorted(self.pan_destination_edl) != sorted(other.pan_destination_edl):
+    if sorted(self.pan_destination_object) != sorted(other.pan_destination_object):
       return False
-    if sorted(self.pan_source_edl) != sorted(other.pan_source_edl):
+    if sorted(self.pan_source_object) != sorted(other.pan_source_object):
       return False
     if sorted(self.pan_log_setting) != sorted(other.pan_log_setting):
       return False
@@ -1135,10 +1135,10 @@ class Term(object):
           self.forwarding_class_except.append(x.value)
         elif x.var_type is VarType.PAN_APPLICATION:
           self.pan_application.append(x.value)
-        elif x.var_type is VarType.PAN_DESTINATION_EDL:
-          self.pan_destination_edl.append(x.value)
-        elif x.var_type is VarType.PAN_SOURCE_EDL:
-          self.pan_source_edl.append(x.value)
+        elif x.var_type is VarType.PAN_DESTINATION_OBJECT:
+          self.pan_destination_object.append(x.value)
+        elif x.var_type is VarType.PAN_SOURCE_OBJECT:
+          self.pan_source_object.append(x.value)
         elif x.var_type is VarType.PAN_LOG_SETTING:
           self.pan_log_setting.append(x.value)
         elif x.var_type is VarType.PAN_SECURITY_PROFILE_GROUP:
@@ -1187,10 +1187,10 @@ class Term(object):
         self.forwarding_class_except.append(obj.value)
       elif obj.var_type is VarType.PAN_APPLICATION:
         self.pan_application.append(obj.value)
-      elif obj.var_type is VarType.PAN_DESTINATION_EDL:
-        self.pan_destination_edl.append(obj.value)
-      elif obj.var_type is VarType.PAN_SOURCE_EDL:
-        self.pan_source_edl.append(obj.value)
+      elif obj.var_type is VarType.PAN_DESTINATION_OBJECT:
+        self.pan_destination_object.append(obj.value)
+      elif obj.var_type is VarType.PAN_SOURCE_OBJECT:
+        self.pan_source_object.append(obj.value)
       elif obj.var_type is VarType.PAN_LOG_SETTING:
         self.pan_log_setting.append(obj.value)
       elif obj.var_type is VarType.PAN_SECURITY_PROFILE_GROUP:
@@ -1556,8 +1556,8 @@ class VarType(object):
   TARGET_RESOURCES = 59
   TARGET_SERVICE_ACCOUNTS = 60
   ENCAPSULATE = 61
-  PAN_DESTINATION_EDL = 63
-  PAN_SOURCE_EDL = 64
+  PAN_DESTINATION_OBJECT = 63
+  PAN_SOURCE_OBJECT = 64
   PAN_LOG_SETTING = 65
   PAN_SECURITY_PROFILE_GROUP = 62
 
@@ -1770,8 +1770,8 @@ tokens = (
     'RPAREN',
     'RSQUARE',
     'PAN_APPLICATION',
-    'PAN_DESTINATION_EDL',
-    'PAN_SOURCE_EDL',
+    'PAN_DESTINATION_OBJECT',
+    'PAN_SOURCE_OBJECT',
     'PAN_LOG_SETTING',
     'PAN_SECURITY_PROFILE_GROUP',
     'ROUTING_INSTANCE',
@@ -1850,8 +1850,8 @@ reserved = {
     'protocol-except': 'PROTOCOL_EXCEPT',
     'qos': 'QOS',
     'pan-application': 'PAN_APPLICATION',
-    'pan-destination-edl': 'PAN_DESTINATION_EDL',
-    'pan-source-edl': 'PAN_SOURCE_EDL',
+    'pan-destination-object': 'PAN_DESTINATION_OBJECT',
+    'pan-source-object': 'PAN_SOURCE_OBJECT',
     'pan-log-setting': 'PAN_LOG_SETTING',
     'pan-security-profile-group': 'PAN_SECURITY_PROFILE_GROUP',
     'routing-instance': 'ROUTING_INSTANCE',
@@ -2031,8 +2031,8 @@ def p_term_spec(p):
                 | term_spec protocol_spec
                 | term_spec qos_spec
                 | term_spec pan_application_spec
-                | term_spec pan_destination_edl_spec
-                | term_spec pan_source_edl_spec
+                | term_spec pan_destination_object_spec
+                | term_spec pan_source_object_spec
                 | term_spec pan_log_setting_spec
                 | term_spec pan_security_profile_group_spec
                 | term_spec routinginstance_spec
@@ -2404,18 +2404,18 @@ def p_pan_application_spec(p):
     p[0].append(VarType(VarType.PAN_APPLICATION, apps))
 
 
-def p_pan_destination_edl_spec(p):
-  """ pan_destination_edl_spec : PAN_DESTINATION_EDL ':' ':' one_or_more_strings """
+def p_pan_destination_object_spec(p):
+  """ pan_destination_object_spec : PAN_DESTINATION_OBJECT ':' ':' one_or_more_strings """
   p[0] = []
-  for apps in p[4]:
-    p[0].append(VarType(VarType.PAN_DESTINATION_EDL, apps))
+  for obj in p[4]:
+    p[0].append(VarType(VarType.PAN_DESTINATION_OBJECT, obj))
 
 
-def p_pan_source_edl_spec(p):
-  """ pan_source_edl_spec : PAN_SOURCE_EDL ':' ':' one_or_more_strings """
+def p_pan_source_object_spec(p):
+  """ pan_source_object_spec : PAN_SOURCE_OBJECT ':' ':' one_or_more_strings """
   p[0] = []
-  for apps in p[4]:
-    p[0].append(VarType(VarType.PAN_SOURCE_EDL, apps))
+  for obj in p[4]:
+    p[0].append(VarType(VarType.PAN_SOURCE_OBJECT, obj))
 
 
 def p_pan_log_setting_spec(p):
