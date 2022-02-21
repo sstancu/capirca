@@ -240,9 +240,9 @@ class Rule(object):
       for addr in saddr_check:
         self.options["source"].append(str(addr))
 
-    if term.pan_source_edl:
-      for edl_name in term.pan_source_edl:
-        self.options["source"].append(edl_name)
+    if term.pan_source_object:
+      for obj_name in term.pan_source_object:
+        self.options["source"].append(obj_name)
 
     if not self.options["source"]:
       self.options["source"].append("any")
@@ -256,9 +256,9 @@ class Rule(object):
       for addr in daddr_check:
         self.options["destination"].append(str(addr))
 
-    if term.pan_destination_edl:
-      for edl_name in term.pan_destination_edl:
-        self.options["destination"].append(edl_name)
+    if term.pan_destination_object:
+      for obj_name in term.pan_destination_object:
+        self.options["destination"].append(obj_name)
 
     if not self.options["destination"]:
       self.options["destination"].append("any")
@@ -392,8 +392,8 @@ class PaloAltoFW(aclgenerator.ACLGenerator):
         "stateless_reply",
         "timeout",
         "pan_application",
-        "pan_destination_edl",
-        "pan_source_edl",
+        "pan_destination_object",
+        "pan_source_object",
         "pan_log_setting",
         "pan_source_user",
         "pan_security_profile_group",

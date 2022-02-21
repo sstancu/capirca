@@ -285,11 +285,11 @@ term test-local-log {
 """
 
 PAN_EDL_TERM_1 = """
-term pan-edl-term-1 {
+term pan-object-term-1 {
   destination-address:: SOME_HOST
   protocol:: tcp
-  pan-source-edl:: edl-name-1
-  pan-destination-edl:: edl-name-2
+  pan-source-object:: object-name-1
+  pan-destination-object:: object-name-2
   action:: accept
 }
 """
@@ -421,8 +421,8 @@ SUPPORTED_TOKENS = frozenset({
     'stateless_reply',
     'timeout',
     'pan_application',
-    'pan_destination_edl',
-    'pan_source_edl',
+    'pan_destination_object',
+    'pan_source_object',
     'pan_log_setting',
     'pan_source_user',
     'pan_security_profile_group',
@@ -679,21 +679,21 @@ class PaloAltoFWTest(unittest.TestCase):
       self.assertEqual(len(x), 1, output)
       self.assertEqual(x[0].text, 'yes', output)
 
-  def testPanEdl(self):
+  def testPanSrcAndDstObject(self):
     definitions = naming.Naming()
     definitions._ParseLine('SOME_HOST = 10.0.0.0/8', 'networks')
     pol = policy.ParsePolicy(GOOD_HEADER_1 + PAN_EDL_TERM_1, definitions)
     paloalto = paloaltofw.PaloAltoFW(pol, EXP_INFO)
     output = str(paloalto)
     x = paloalto.config.findtext(PATH_RULES +
-                                 "/entry[@name='pan-edl-term-1']/source/member")
-    self.assertEqual(x, 'edl-name-1', output)
+                                 "/entry[@name='pan-object-term-1']/source/member")
+    self.assertEqual(x, 'object-name-1', output)
     y = paloalto.config.findtext(PATH_RULES +
-                                 "/entry[@name='pan-edl-term-1']/destination/member")
+                                 "/entry[@name='pan-object-term-1']/destination/member")
     self.assertEqual(y, 'SOME_HOST', output)
     z = paloalto.config.findtext(PATH_RULES +
-                                 "/entry[@name='pan-edl-term-1']/destination/member[2]")
-    self.assertEqual(z, 'edl-name-2', output)
+                                 "/entry[@name='pan-object-term-1']/destination/member[2]")
+    self.assertEqual(z, 'object-name-2', output)
 
   def testAcceptAction(self):
     pol = policy.ParsePolicy(GOOD_HEADER_1 + ACTION_ACCEPT_TERM, self.naming)
