@@ -483,6 +483,18 @@ term good-term-1 {
   action:: accept
 }
 """
+PROTO_NUMBER_WITH_NAME_TERM = """
+term good-proto-term-1 {
+  protocol:: 0
+  action:: accept
+}
+"""
+PROTO_NUMBER_ONLY_TERM = """
+term good-proto-term-1 {
+  protocol:: 100
+  action:: accept
+}
+"""
 FRAGOFFSET_TERM = """
 term good-term-1 {
   fragment-offset:: 1-7
@@ -1472,6 +1484,18 @@ class JuniperTest(parameterized.TestCase):
                                              self.naming), EXP_INFO)
     output = str(jcl)
     self.assertIn('protocol hop-by-hop;', output, output)
+
+  def testProtocolNumberWithName(self):
+    jcl = juniper.Juniper(policy.ParsePolicy(GOOD_HEADER + PROTO_NUMBER_WITH_NAME_TERM,
+                                             self.naming), EXP_INFO)
+    output = str(jcl)
+    self.assertIn('protocol hop-by-hop;', output, output)
+
+  def testProtocolNumberOnly(self):
+    jcl = juniper.Juniper(policy.ParsePolicy(GOOD_HEADER + PROTO_NUMBER_ONLY_TERM,
+                                             self.naming), EXP_INFO)
+    output = str(jcl)
+    self.assertIn('protocol 100;', output, output)
 
   def testFlexibleMatch(self):
     jcl = juniper.Juniper(policy.ParsePolicy(

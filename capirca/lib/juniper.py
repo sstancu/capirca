@@ -20,6 +20,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import copy
 import datetime
 from absl import logging
 from capirca.lib import aclgenerator
@@ -172,6 +173,30 @@ class Term(aclgenerator.Term):
                            'tcp-est': 'tcp-flags "(ack|rst)"'}
               }
 
+  SUPPORTED_PROTOS_BY_NUMBER = {
+    51: 'ah',
+    60: 'dstopts',
+    8: 'egp',
+    50: 'esp',
+    44: 'fragment',
+    47: 'gre',
+    0: 'hop-by-hop',
+    1: 'icmp',
+    58: 'icmp6',
+    2: 'igmp',
+    4: 'ipip',
+    41: 'ipv6',
+    59: 'no-next-header',
+    89: 'ospf',
+    103: 'pim',
+    43: 'routing',
+    46: 'rsvp',
+    132: 'sctp',
+    6: 'tcp',
+    17: 'udp',
+    112: 'vrrp',
+  }
+
   def __init__(self, term, term_type, enable_dsmo, noverbose):
     super(Term, self).__init__(term)
     self.term = term
@@ -181,9 +206,6 @@ class Term(aclgenerator.Term):
 
     if term_type not in self._TERM_TYPE:
       raise ValueError('Unknown Filter Type: %s' % term_type)
-    if 'hopopt' in self.term.protocol:
-      loc = self.term.protocol.index('hopopt')
-      self.term.protocol[loc] = 'hop-by-hop'
 
     # some options need to modify the actions
     self.extra_actions = []
@@ -191,6 +213,38 @@ class Term(aclgenerator.Term):
   # TODO(pmoody): get rid of all of the default string concatenation here.
   #  eg, indent(8) + 'foo;' -> '%s%s;' % (indent(8), 'foo'). pyglint likes this
   #  more.
+
+  def _EnsurePlatformProtocolFormat(self, protocol):
+    """Convert protocol names or numbers to supported name format if available,
+    otherwise use a numeric format.
+
+    Args:
+      protocol: List of protocols in string or number format.
+
+    Returns:
+      None. Passed protocol contents is modified.
+    """
+    for index, proto in enumerate(protocol):
+      if proto in ('icmp6', 'icmpv6'):
+        # There is a lot of existing code relating to the differing name
+        # format of icmp6, and different Juniper flavors, so just keep
+        # whatever was given.
+        continue
+      elif proto in self.PROTO_MAP:
+        # Ensure string-format protocol is supported in Junos. Get proto number
+        # from common proto map, and take corresponding name from Juniper proto
+        # map, or fallback to proto number if proto name is not supported.
+        proto_num = self.PROTO_MAP[proto]
+        protocol[index] = self.SUPPORTED_PROTOS_BY_NUMBER.get(proto_num,
+                                                              proto_num)
+      else:
+        # Protocol was provided in numeric format.
+        try:
+          proto_int = int(proto)
+        except ValueError:
+          raise ValueError('Unsupported protocol: %s' % proto) from ValueError
+        protocol[index] = self.SUPPORTED_PROTOS_BY_NUMBER.get(proto_int, proto)
+
   def __str__(self):
     # Verify platform specific terms. Skip whole term if platform does not
     # match.
@@ -203,13 +257,24 @@ class Term(aclgenerator.Term):
 
     config = Config(indent=self._DEFAULT_INDENT)
     from_str = []
+
+    # Supported protocol names on Juniper can differ from the common protocol
+    # mapping defined in aclgenerator.Term class. The protocols are copied
+    # into a local variable, so that the original term does not get changed.
+    # This would especially be a problem when defining mixed policies, where
+    # the terms are iterated over twice (ipv4 and ipv6), and some common
+    # validations would fail when the protocol has a Juniper-supporterd name
+    # that is not recognized by the aclgenerator.Term validations.
+    protocol = copy.deepcopy(self.term.protocol)
+    self._EnsurePlatformProtocolFormat(protocol)
+
     # Don't render icmpv6 protocol terms under inet, or icmp under inet6
-    if ((self.term_type == 'inet6' and 'icmp' in self.term.protocol) or
-        (self.term_type == 'inet' and ('icmpv6' in self.term.protocol or
-                                       'icmp6' in self.term.protocol))):
+    if ((self.term_type == 'inet6' and 'icmp' in protocol) or
+        (self.term_type == 'inet' and ('icmpv6' in protocol or
+                                       'icmp6' in protocol))):
       logging.debug(self.NO_AF_LOG_PROTO.substitute(
           term=self.term.name,
-          proto=', '.join(self.term.protocol),
+          proto=', '.join(protocol),
           af=self.term_type))
       return ''
 
@@ -250,7 +315,7 @@ class Term(aclgenerator.Term):
         # only append tcp-established for option established when
         # tcp is the only protocol, otherwise other protos break on juniper
         elif opt.startswith('established'):
-          if self.term.protocol == ['tcp']:
+          if protocol == ['tcp']:
             if 'tcp-established;' not in from_str:
               from_str.append(family_keywords['tcp-est'] + ';')
 
@@ -258,7 +323,7 @@ class Term(aclgenerator.Term):
         # in the protocols, raise an error
         elif opt.startswith('tcp-established'):
           flag = family_keywords['tcp-est'] + ';'
-          if self.term.protocol == ['tcp']:
+          if protocol == ['tcp']:
             if flag not in from_str:
               from_str.append(flag)
           else:
@@ -267,7 +332,7 @@ class Term(aclgenerator.Term):
                 % self.term.name)
         elif opt.startswith('rst'):
           from_str.append('tcp-flags "rst";')
-        elif opt.startswith('initial') and 'tcp' in self.term.protocol:
+        elif opt.startswith('initial') and 'tcp' in protocol:
           from_str.append('tcp-initial;')
         elif opt.startswith('first-fragment'):
           from_str.append('first-fragment;')
@@ -304,7 +369,7 @@ class Term(aclgenerator.Term):
                           self.term.next_ip or
                           self.term.port or
                           self.term.precedence or
-                          self.term.protocol or
+                          protocol or
                           self.term.protocol_except or
                           self.term.source_address or
                           self.term.source_port or
@@ -441,11 +506,11 @@ class Term(aclgenerator.Term):
         config.Append('ttl %s;' % self.term.ttl)
 
       # protocol
-      if self.term.protocol:
+      if protocol:
         # both are supported on JunOS, but only icmp6 is supported
         # on SRX loopback stateless filter
         config.Append(family_keywords['protocol'] +
-                      ' ' + self._Group(self.term.protocol))
+                      ' ' + self._Group(protocol))
 
       # protocol
       if self.term.protocol_except:
@@ -482,7 +547,7 @@ class Term(aclgenerator.Term):
       icmp_types = ['']
       if self.term.icmp_type:
         icmp_types = self.NormalizeIcmpTypes(self.term.icmp_type,
-                                             self.term.protocol, self.term_type)
+                                             protocol, self.term_type)
       if icmp_types != ['']:
         config.Append('icmp-type %s' % self._Group(icmp_types))
       if self.term.icmp_code:
