@@ -174,27 +174,27 @@ class Term(aclgenerator.Term):
               }
 
   SUPPORTED_PROTOS_BY_NUMBER = {
-    51: 'ah',
-    60: 'dstopts',
-    8: 'egp',
-    50: 'esp',
-    44: 'fragment',
-    47: 'gre',
     0: 'hop-by-hop',
     1: 'icmp',
-    58: 'icmp6',
     2: 'igmp',
     4: 'ipip',
+    6: 'tcp',
+    8: 'egp',
+    17: 'udp',
     41: 'ipv6',
+    43: 'routing',
+    44: 'fragment',
+    46: 'rsvp',
+    47: 'gre',
+    50: 'esp',
+    51: 'ah',
+    58: 'icmp6',
     59: 'no-next-header',
+    60: 'dstopts',
     89: 'ospf',
     103: 'pim',
-    43: 'routing',
-    46: 'rsvp',
-    132: 'sctp',
-    6: 'tcp',
-    17: 'udp',
     112: 'vrrp',
+    132: 'sctp',
   }
 
   def __init__(self, term, term_type, enable_dsmo, noverbose):
@@ -232,18 +232,20 @@ class Term(aclgenerator.Term):
         continue
       elif proto in self.PROTO_MAP:
         # Ensure string-format protocol is supported in Junos. Get proto number
-        # from common proto map, and take corresponding name from Juniper proto
-        # map, or fallback to proto number if proto name is not supported.
+        # from common proto map to find corresponding name from Juniper proto
+        # map.
         proto_num = self.PROTO_MAP[proto]
-        protocol[index] = self.SUPPORTED_PROTOS_BY_NUMBER.get(proto_num,
-                                                              proto_num)
       else:
         # Protocol was provided in numeric format.
         try:
-          proto_int = int(proto)
+          proto_num = int(proto)
         except ValueError:
           raise ValueError('Unsupported protocol: %s' % proto) from ValueError
-        protocol[index] = self.SUPPORTED_PROTOS_BY_NUMBER.get(proto_int, proto)
+
+      # Find Juniper-supported protocol name according to protocol number.
+      # Fallback to proto number if name is not supported.
+      protocol[index] = self.SUPPORTED_PROTOS_BY_NUMBER.get(proto_num,
+                                                            proto_num)
 
   def __str__(self):
     # Verify platform specific terms. Skip whole term if platform does not
