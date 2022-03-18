@@ -113,8 +113,6 @@ class Term(object):
   ALWAYS_PROTO_NUM = ['ipip']
   # provide flipped key/value dicts
   PROTO_MAP_BY_NUMBER = dict([(v, k) for (k, v) in six.iteritems(PROTO_MAP)])
-  # A set for checking validity of protocol given in numeric format.
-  ALL_PROTO_NUMBERS = {p for p in range(0, 256)}
   AF_MAP_BY_NUMBER = dict([(v, k) for (k, v) in six.iteritems(AF_MAP)])
 
   NO_AF_LOG_ADDR = string.Template('Term $term will not be rendered, as it has'
@@ -151,7 +149,8 @@ class Term(object):
     if protocol in self.PROTO_MAP:
       return True
     try:
-      return int(protocol) in self.ALL_PROTO_NUMBERS
+      # Range of valid protocol numbers.
+      return 0 <= int(protocol) < 256
     except ValueError:
       return False
 
