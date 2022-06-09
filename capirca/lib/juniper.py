@@ -134,6 +134,10 @@ class Term(aclgenerator.Term):
     term_type: String indicating type of term, inet, inet6 icmp etc.
     enable_dsmo: Boolean to enable dsmo.
     noverbose: Boolean to disable verbosity.
+    filter_direction: Enum indicating the direction of the filter on an
+      interface e.g. INGRESS.
+    interface_type: Enum indicating the type of interface filter will be applied
+      e.g. LOOPBACK.
   """
   _PLATFORM = 'juniper'
   _DEFAULT_INDENT = 12
@@ -197,15 +201,28 @@ class Term(aclgenerator.Term):
     132: 'sctp',
   }
 
-  def __init__(self, term, term_type, enable_dsmo, noverbose):
-    super(Term, self).__init__(term)
+  def __init__(self, term, term_type, enable_dsmo, noverbose, filter_direction=None, interface_type=None):
+    super().__init__(term)
     self.term = term
     self.term_type = term_type
     self.enable_dsmo = enable_dsmo
     self.noverbose = noverbose
+    # Filter direction and interface type are needed in juniperevo sub-class for IPv6 filters.
+    self.filter_direction = filter_direction
+    self.interface_type = interface_type
 
     if term_type not in self._TERM_TYPE:
       raise ValueError('Unknown Filter Type: %s' % term_type)
+
+    if self._PLATFORM != 'msmpc':
+      if term_type not in self._TERM_TYPE:
+        raise ValueError('Unknown Filter Type: %s' % term_type)
+      if 'hopopt' in self.term.protocol:
+        loc = self.term.protocol.index('hopopt')
+        self.term.protocol[loc] = 'hop-by-hop'
+      if 'hopopt' in self.term.protocol_except:
+        loc = self.term.protocol_except.index('hopopt')
+        self.term.protocol_except[loc] = 'hop-by-hop'
 
     # some options need to modify the actions
     self.extra_actions = []
@@ -1005,6 +1022,17 @@ class Juniper(aclgenerator.ACLGenerator):
       enable_dsmo = 'enable_dsmo' in filter_options[1:]
       noverbose = 'noverbose' in filter_options[1:]
 
+      filter_direction = None
+      if 'ingress' in filter_options[1:]:
+        filter_direction = 'ingress'
+      elif 'egress' in filter_options[1:]:
+        filter_direction = 'egress'
+      interface_type = None
+      if 'physical' in filter_options[1:]:
+        interface_type = 'physical'
+      elif 'loopback' in filter_options[1:]:
+        interface_type = 'loopback'
+
       if not interface_specific:
         filter_options.remove('not-interface-specific')
       if enable_dsmo:
@@ -1062,7 +1090,7 @@ class Juniper(aclgenerator.ACLGenerator):
             raise JuniperFragmentInV6Error('The term %s uses "is-fragment" but '
                                           'is a v6 policy.' % term.name)
 
-          new_terms.append(self._TERM(term, filter_type, enable_dsmo, noverbose))
+          new_terms.append(self._TERM(term, filter_type, enable_dsmo, noverbose, filter_direction, interface_type))
 
         self.juniper_policies.append((header, filter_name + filter_name_suffix, filter_type,
                                       interface_specific, new_terms))

@@ -67,22 +67,42 @@ class TestAclGenDemo(unittest.TestCase):
         None,
         self.context,
     )
-    files = ['sample_cisco_lab.acl', 'sample_cloudarmor.gca', 'sample_gce.gce',
-             'sample_ipset.ips', 'sample_juniper_loopback.jcl',
-             'sample_multitarget.acl', 'sample_multitarget.asa',
-             'sample_multitarget.bacl', 'sample_multitarget.eacl',
-             'sample_multitarget.ipt', 'sample_multitarget.jcl',
-             'sample_multitarget.msmpc', 'sample_multitarget.xacl',
-             'sample_multitarget.nxacl',
-             'sample_nsxv.nsx', 'sample_packetfilter.pf',
-             'sample_speedway.ipt', 'sample_srx.srx',
-             'sample_paloalto.xml', 'sample_stateful_multitarget_simple.xml',
-             'sample_stateful_multitarget_simple.srx',
-             'sample_stateful_multitarget_complex.xml',
-             'sample_stateful_multitarget_complex.srx',
-             ]
-    expected = [mock.call(
-        os.path.join(self.test_subdirectory, f), mock.ANY) for f in files]
+    files = [
+        'sample_cisco_lab.acl',
+        'sample_cloudarmor.gca',
+        'sample_gce.gce',
+        'sample_ipset.ips',
+        'sample_juniper_loopback.jcl',
+        'sample_juniperevo_loopback.evojcl',
+        'sample_multitarget.acl',
+        'sample_multitarget.asa',
+        'sample_multitarget.bacl',
+        'sample_multitarget.eacl',
+        'sample_multitarget.ipt',
+        'sample_multitarget.jcl',
+        'sample_multitarget.evojcl',
+        'sample_multitarget.msmpc',
+        'sample_multitarget.xacl',
+        'sample_multitarget.nxacl',
+        'sample_nsxv.nsx',
+        'sample_packetfilter.pf',
+        'sample_speedway.ipt',
+        'sample_srx.srx',
+        'sample_paloalto.xml',
+        'sample_nftables-mixed-icmp.nft',
+        'sample_nftables-mixed-multiple-headers-combo.nft',
+        'sample_nftables.nft',
+        'sample_nftables-dev.nft',
+        'sample_stateful_multitarget_simple.xml',
+        'sample_stateful_multitarget_simple.srx',
+        'sample_stateful_multitarget_complex.xml',
+        'sample_stateful_multitarget_complex.srx',
+        'sample_k8s.yml',
+    ]
+    expected = [
+        mock.call(pathlib.Path(self.test_subdirectory, f), mock.ANY)
+        for f in files
+    ]
     mock_writer.assert_has_calls(expected, any_order=True)
 
   @mock.patch.object(aclgen, '_WriteFile', autospec=True)
