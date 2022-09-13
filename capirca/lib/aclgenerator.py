@@ -76,6 +76,7 @@ class Term(object):
   ICMP_TYPE = policy.Term.ICMP_TYPE
   # http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
   PROTO_MAP = {'hopopt': 0,
+               'hop-by-hop': 0,
                'icmp': 1,
                'igmp': 2,
                'ggp': 3,
