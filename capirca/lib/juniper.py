@@ -20,6 +20,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import copy
 import datetime
 from absl import logging
 from capirca.lib import aclgenerator
@@ -169,7 +170,32 @@ class Term(aclgenerator.Term):
                            'daddr': 'ip-destination-address',
                            'protocol': 'ip-protocol',
                            'protocol-except': 'ip-protocol-except',
-                           'tcp-est': 'tcp-flags "(ack|rst)"'}}
+                           'tcp-est': 'tcp-flags "(ack|rst)"'}
+              }
+
+  SUPPORTED_PROTOS_BY_NUMBER = {
+    0: 'hop-by-hop',
+    1: 'icmp',
+    2: 'igmp',
+    4: 'ipip',
+    6: 'tcp',
+    8: 'egp',
+    17: 'udp',
+    41: 'ipv6',
+    43: 'routing',
+    44: 'fragment',
+    46: 'rsvp',
+    47: 'gre',
+    50: 'esp',
+    51: 'ah',
+    58: 'icmp6',
+    59: 'no-next-header',
+    60: 'dstopts',
+    89: 'ospf',
+    103: 'pim',
+    112: 'vrrp',
+    132: 'sctp',
+  }
 
   def __init__(self, term, term_type, enable_dsmo, noverbose):
     super(Term, self).__init__(term)
@@ -180,9 +206,6 @@ class Term(aclgenerator.Term):
 
     if term_type not in self._TERM_TYPE:
       raise ValueError('Unknown Filter Type: %s' % term_type)
-    if 'hopopt' in self.term.protocol:
-      loc = self.term.protocol.index('hopopt')
-      self.term.protocol[loc] = 'hop-by-hop'
 
     # some options need to modify the actions
     self.extra_actions = []
@@ -190,6 +213,40 @@ class Term(aclgenerator.Term):
   # TODO(pmoody): get rid of all of the default string concatenation here.
   #  eg, indent(8) + 'foo;' -> '%s%s;' % (indent(8), 'foo'). pyglint likes this
   #  more.
+
+  def _EnsurePlatformProtocolFormat(self, protocol):
+    """Convert protocol names or numbers to supported name format if available,
+    otherwise use a numeric format.
+
+    Args:
+      protocol: List of protocols in string or number format.
+
+    Returns:
+      None. Passed protocol contents is modified.
+    """
+    for index, proto in enumerate(protocol):
+      if proto in ('icmp6', 'icmpv6'):
+        # There is a lot of existing code relating to the differing name
+        # format of icmp6, and different Juniper flavors, so just keep
+        # whatever was given.
+        continue
+      elif proto in self.PROTO_MAP:
+        # Ensure string-format protocol is supported in Junos. Get proto number
+        # from common proto map to find corresponding name from Juniper proto
+        # map.
+        proto_num = self.PROTO_MAP[proto]
+      else:
+        # Protocol was provided in numeric format.
+        try:
+          proto_num = int(proto)
+        except ValueError:
+          raise ValueError('Unsupported protocol: %s' % proto) from ValueError
+
+      # Find Juniper-supported protocol name according to protocol number.
+      # Fallback to proto number if name is not supported.
+      protocol[index] = self.SUPPORTED_PROTOS_BY_NUMBER.get(proto_num,
+                                                            proto_num)
+
   def __str__(self):
     # Verify platform specific terms. Skip whole term if platform does not
     # match.
@@ -202,13 +259,24 @@ class Term(aclgenerator.Term):
 
     config = Config(indent=self._DEFAULT_INDENT)
     from_str = []
+
+    # Supported protocol names on Juniper can differ from the common protocol
+    # mapping defined in aclgenerator.Term class. The protocols are copied
+    # into a local variable, so that the original term does not get changed.
+    # This would especially be a problem when defining mixed policies, where
+    # the terms are iterated over twice (ipv4 and ipv6), and some common
+    # validations would fail when the protocol has a Juniper-supporterd name
+    # that is not recognized by the aclgenerator.Term validations.
+    protocol = copy.deepcopy(self.term.protocol)
+    self._EnsurePlatformProtocolFormat(protocol)
+
     # Don't render icmpv6 protocol terms under inet, or icmp under inet6
-    if ((self.term_type == 'inet6' and 'icmp' in self.term.protocol) or
-        (self.term_type == 'inet' and ('icmpv6' in self.term.protocol or
-                                       'icmp6' in self.term.protocol))):
+    if ((self.term_type == 'inet6' and 'icmp' in protocol) or
+        (self.term_type == 'inet' and ('icmpv6' in protocol or
+                                       'icmp6' in protocol))):
       logging.debug(self.NO_AF_LOG_PROTO.substitute(
           term=self.term.name,
-          proto=', '.join(self.term.protocol),
+          proto=', '.join(protocol),
           af=self.term_type))
       return ''
 
@@ -249,7 +317,7 @@ class Term(aclgenerator.Term):
         # only append tcp-established for option established when
         # tcp is the only protocol, otherwise other protos break on juniper
         elif opt.startswith('established'):
-          if self.term.protocol == ['tcp']:
+          if protocol == ['tcp']:
             if 'tcp-established;' not in from_str:
               from_str.append(family_keywords['tcp-est'] + ';')
 
@@ -257,7 +325,7 @@ class Term(aclgenerator.Term):
         # in the protocols, raise an error
         elif opt.startswith('tcp-established'):
           flag = family_keywords['tcp-est'] + ';'
-          if self.term.protocol == ['tcp']:
+          if protocol == ['tcp']:
             if flag not in from_str:
               from_str.append(flag)
           else:
@@ -266,7 +334,7 @@ class Term(aclgenerator.Term):
                 % self.term.name)
         elif opt.startswith('rst'):
           from_str.append('tcp-flags "rst";')
-        elif opt.startswith('initial') and 'tcp' in self.term.protocol:
+        elif opt.startswith('initial') and 'tcp' in protocol:
           from_str.append('tcp-initial;')
         elif opt.startswith('first-fragment'):
           from_str.append('first-fragment;')
@@ -303,7 +371,7 @@ class Term(aclgenerator.Term):
                           self.term.next_ip or
                           self.term.port or
                           self.term.precedence or
-                          self.term.protocol or
+                          protocol or
                           self.term.protocol_except or
                           self.term.source_address or
                           self.term.source_port or
@@ -440,11 +508,11 @@ class Term(aclgenerator.Term):
         config.Append('ttl %s;' % self.term.ttl)
 
       # protocol
-      if self.term.protocol:
+      if protocol:
         # both are supported on JunOS, but only icmp6 is supported
         # on SRX loopback stateless filter
         config.Append(family_keywords['protocol'] +
-                      ' ' + self._Group(self.term.protocol))
+                      ' ' + self._Group(protocol))
 
       # protocol
       if self.term.protocol_except:
@@ -481,7 +549,7 @@ class Term(aclgenerator.Term):
       icmp_types = ['']
       if self.term.icmp_type:
         icmp_types = self.NormalizeIcmpTypes(self.term.icmp_type,
-                                             self.term.protocol, self.term_type)
+                                             protocol, self.term_type)
       if icmp_types != ['']:
         config.Append('icmp-type %s' % self._Group(icmp_types))
       if self.term.icmp_code:
@@ -862,7 +930,7 @@ class Juniper(aclgenerator.ACLGenerator):
 
   _PLATFORM = 'juniper'
   _DEFAULT_PROTOCOL = 'ip'
-  _SUPPORTED_AF = set(('inet', 'inet6', 'bridge'))
+  _SUPPORTED_AF = set(('inet', 'inet6', 'bridge', 'mixed'))
   _TERM = Term
   SUFFIX = '.jcl'
 
@@ -947,42 +1015,57 @@ class Juniper(aclgenerator.ACLGenerator):
       if len(filter_options) > 1:
         filter_type = filter_options[1]
 
-      term_names = set()
-      new_terms = []
-      for term in terms:
+      if filter_type == 'mixed':
+        filter_types_to_process = ['inet', 'inet6']
+      else:
+        filter_types_to_process = [filter_type]
 
-        # if inactive is set, deactivate the term and remove the option.
-        if 'inactive' in term.option:
-          term.inactive = True
-          term.option.remove('inactive')
+      for filter_type in filter_types_to_process:
 
-        term.name = self.FixTermLength(term.name)
+        filter_name_suffix = ''
+        # If mixed filter_type, will append 4 or 6 to the filter name
+        if len(filter_types_to_process) > 1:
+          if filter_type == 'inet':
+            filter_name_suffix = '4'
+          if filter_type == 'inet6':
+            filter_name_suffix = '6'
 
-        if term.name in term_names:
-          raise JuniperDuplicateTermError('You have multiple terms named: %s' %
-                                          term.name)
-        term_names.add(term.name)
+        term_names = set()
+        new_terms = []
+        for term in terms:
 
-        term = self.FixHighPorts(term, af=filter_type)
-        if not term:
-          continue
+          # if inactive is set, deactivate the term and remove the option.
+          if 'inactive' in term.option:
+            term.inactive = True
+            term.option.remove('inactive')
 
-        if term.expiration:
-          if term.expiration <= exp_info_date:
-            logging.info('INFO: Term %s in policy %s expires '
-                         'in less than two weeks.', term.name, filter_name)
-          if term.expiration <= current_date:
-            logging.warning('WARNING: Term %s in policy %s is expired and '
-                            'will not be rendered.', term.name, filter_name)
+          term.name = self.FixTermLength(term.name)
+
+          if term.name in term_names:
+            raise JuniperDuplicateTermError('You have multiple terms named: %s' %
+                                            term.name)
+          term_names.add(term.name)
+
+          term = self.FixHighPorts(term, af=filter_type)
+          if not term:
             continue
-        if 'is-fragment' in term.option and filter_type == 'inet6':
-          raise JuniperFragmentInV6Error('The term %s uses "is-fragment" but '
-                                         'is a v6 policy.' % term.name)
 
-        new_terms.append(self._TERM(term, filter_type, enable_dsmo, noverbose))
+          if term.expiration:
+            if term.expiration <= exp_info_date:
+              logging.info('INFO: Term %s in policy %s expires '
+                          'in less than two weeks.', term.name, filter_name)
+            if term.expiration <= current_date:
+              logging.warning('WARNING: Term %s in policy %s is expired and '
+                              'will not be rendered.', term.name, filter_name)
+              continue
+          if 'is-fragment' in term.option and filter_type == 'inet6':
+            raise JuniperFragmentInV6Error('The term %s uses "is-fragment" but '
+                                          'is a v6 policy.' % term.name)
 
-      self.juniper_policies.append((header, filter_name, filter_type,
-                                    interface_specific, new_terms))
+          new_terms.append(self._TERM(term, filter_type, enable_dsmo, noverbose))
+
+        self.juniper_policies.append((header, filter_name + filter_name_suffix, filter_type,
+                                      interface_specific, new_terms))
 
   def __str__(self):
     config = Config()

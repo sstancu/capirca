@@ -127,8 +127,7 @@ class Term(object):
   def __init__(self, term):
     if term.protocol:
       for protocol in term.protocol:
-        if (protocol not in self.PROTO_MAP and
-            str(protocol) not in [str(p) for p in self.PROTO_MAP_BY_NUMBER]):
+        if not self._IsValidProtocol(protocol):
           raise UnsupportedFilterError('Protocol(s) %s are not supported.'
                                        % str(term.protocol))
 
@@ -136,6 +135,24 @@ class Term(object):
                                            self.ALWAYS_PROTO_NUM,
                                            self.PROTO_MAP)
     self.term = term
+
+  def _IsValidProtocol(self, protocol):
+    """Return true if given protocol is a valid protocol in either
+    a known name format (string) or a valid numeric protocol.
+
+    Args:
+      protocol: Protocol to check. Normally should be either a str or int.
+
+    Returns:
+      Boolean True if protocol is valid, otherwise False
+    """
+    if protocol in self.PROTO_MAP:
+      return True
+    try:
+      # Range of valid protocol numbers.
+      return 0 <= int(protocol) < 256
+    except ValueError:
+      return False
 
   def NormalizeAddressFamily(self, af):
     """Convert (if necessary) address family name to numeric value.
