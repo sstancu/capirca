@@ -492,6 +492,7 @@ term good-proto-term-1 {
 PROTO_NUMBER_ONLY_TERM = """
 term good-proto-term-1 {
   protocol:: 100
+  action:: accept
 }
 """
 HOPOPT_TERM_EXCEPT = """
