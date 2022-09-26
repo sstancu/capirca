@@ -341,27 +341,49 @@ class CiscoASA(aclgenerator.ACLGenerator):
     self.ciscoasa_policies = []
     current_date = datetime.date.today()
     exp_info_date = current_date + datetime.timedelta(weeks=exp_info)
+    good_filter_types = ['extended', 'inet6', 'mixed']
 
     for header, terms in self.policy.filters:
       filter_options = header.FilterOptions(self._PLATFORM)
       filter_name = header.FilterName(self._PLATFORM)
 
-      new_terms = []
-      # now add the terms
-      for term in terms:
-        if term.expiration:
-          if term.expiration <= exp_info_date:
-            logging.info('INFO: Term %s in policy %s expires '
-                         'in less than two weeks.', term.name, filter_name)
-          if term.expiration <= current_date:
-            logging.warning('WARNING: Term %s in policy %s is expired and '
-                            'will not be rendered.', term.name, filter_name)
-            continue
+      filter_type = 'extended'
+      enable_dsmo = False
 
-        enable_dsmo = len(filter_options) > 1 and 'enable_dsmo' in filter_options[1:]
-        new_terms.append(str(Term(term, filter_name, enable_dsmo=enable_dsmo)))
+      if len(filter_options) > 1:
+        if filter_options[1] in good_filter_types:
+          # specifying filter type is optional, to be backwards compatible.
+          filter_type = filter_options[1]
+        enable_dsmo = 'enable_dsmo' in filter_options[1:]
 
-      self.ciscoasa_policies.append((header, filter_name, new_terms))
+      filter_list = [filter_type]
+      if filter_type == 'mixed':
+        filter_list = ['extended', 'inet6']
+
+      for next_filter in filter_list:
+        new_terms = []
+        af = 4 if next_filter == 'extended' else 6
+
+        # ciscoasa requires different name for the v4 and v6 acls
+        # todo requires different command prefix also ? should be "^ipv6 access-list filter_name extended allow..."
+
+        if filter_type == 'mixed' and next_filter == 'inet6':
+          filter_name = 'ipv6-%s' % filter_name
+
+        # now add the terms
+        for term in terms:
+          if term.expiration:
+            if term.expiration <= exp_info_date:
+              logging.info('INFO: Term %s in policy %s expires '
+                           'in less than two weeks.', term.name, filter_name)
+            if term.expiration <= current_date:
+              logging.warning('WARNING: Term %s in policy %s is expired and '
+                              'will not be rendered.', term.name, filter_name)
+              continue
+
+          new_terms.append(str(Term(term, filter_name, af=af, enable_dsmo=enable_dsmo)))
+
+        self.ciscoasa_policies.append((header, filter_name, new_terms))
 
   def __str__(self):
     target = []

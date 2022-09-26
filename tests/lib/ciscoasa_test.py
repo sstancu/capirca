@@ -19,6 +19,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import re
 import unittest
 
 from capirca.lib import ciscoasa
@@ -57,11 +58,33 @@ term good-term-2 {
 }
 """
 
+GOOD_TERM_3 = """
+term good-term-3 {
+  protocol:: tcp
+  destination-address:: SOME_HOST
+  action:: accept
+}
+"""
+
 GOOD_DSMO_TERM = """
 term good-dsmo-term {
   protocol:: tcp
   destination-address:: SOME_HOST
   action:: accept
+}
+"""
+
+GOOD_INET6_HEADER = """
+header {
+  comment:: "inet6 header test"
+  target:: ciscoasa inet6_acl inet6
+}
+"""
+
+GOOD_MIXED_HEADER = """
+header {
+  comment:: "mixed inet/inet6 header test"
+  target:: ciscoasa mixed_acl mixed
 }
 """
 
@@ -170,6 +193,32 @@ class CiscoASATest(unittest.TestCase):
     acl = ciscoasa.CiscoASA(policy.ParsePolicy(GOOD_DSMO_HEADER + GOOD_DSMO_TERM,
                                                self.naming), EXP_INFO)
     self.assertIn('permit tcp any 192.168.0.64 255.255.0.224', str(acl))
+
+    self.naming.GetNetAddr.assert_called_once_with('SOME_HOST')
+
+  def testInet6(self):
+    self.naming.GetNetAddr.return_value = [nacaddr.IP('10.0.0.0/8'),
+                                           nacaddr.IP('2001:4860:8000::/33')]
+
+    acl = ciscoasa.CiscoASA(policy.ParsePolicy(GOOD_INET6_HEADER + GOOD_TERM_3,
+                                               self.naming), EXP_INFO)
+    inet6_test = 'permit tcp any 2001:4860:8000::/33'
+    self.assertTrue(re.search(inet6_test, str(acl)), str(acl))
+    self.assertNotIn('10.0.0.0', str(acl), str(acl))
+
+    self.naming.GetNetAddr.assert_called_once_with('SOME_HOST')
+
+  def testMixed(self):
+    self.naming.GetNetAddr.return_value = [nacaddr.IP('10.0.0.0/8'),
+                                           nacaddr.IP('2001:4860:8000::/33')]
+
+    acl = ciscoasa.CiscoASA(policy.ParsePolicy(GOOD_MIXED_HEADER + GOOD_TERM_3,
+                                               self.naming), EXP_INFO)
+    inet6_test1 = 'permit tcp any 10.0.0.0 255.0.0.0'
+    inet6_test2 = 'permit tcp any 2001:4860:8000::/33'
+    aclout = str(acl)
+    self.assertTrue(re.search(inet6_test1, aclout), aclout)
+    self.assertTrue(re.search(inet6_test2, aclout), aclout)
 
     self.naming.GetNetAddr.assert_called_once_with('SOME_HOST')
 
