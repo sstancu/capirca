@@ -1,13 +1,13 @@
-# Juniper
+# Juniper EVO
 
-The juniper header designation has the following format:
+The Juniper EVO header designation has the following format:
 
 ```
-target:: juniper [filter name] {inet|inet6|bridge}
-filter name: defines the name of the juniper filter.
+target:: juniperevo [filter name] {inet|inet6|bridge}
+filter name: defines the name of the Juniper EVO filter.
 inet: specifies the output should be for IPv4 only filters. This is the default format.
 inet6: specifies the output be for IPv6 only filters.
-bridge: specifies the output should render a Juniper bridge filter.
+bridge: specifies the output should render a Juniper EVO bridge filter.
 ```
 
 When inet4 or inet6 is specified, naming tokens with both IPv4 and IPv6 filters
@@ -17,24 +17,24 @@ The default format is `inet4`, and is implied if not other argument is given.
 
 
 
-## Juniper
-The juniper header designation has the following format:
+## Juniper EVO
+The Juniper EVO header designation has the following format:
 ```
-target:: juniper [filter name] {inet|inet6|bridge} {dsmo} {not-interface-specific}
+target:: juniperevo [filter name] {inet|inet6|bridge} {dsmo} {not-interface-specific} {direction} {interface}
 ```
-  * _filter name_: defines the name of the juniper filter.
+  * _filter name_: defines the name of the Juniper EVO filter.
   * _inet_: specifies the output should be for IPv4 only filters. This is the default format.
   * _inet6_: specifies the output be for IPv6 only filters.
-  * _bridge_: specifies the output should render a Juniper bridge filter.
+  * _bridge_: specifies the output should render a Juniper EVO bridge filter.
   * _dsmo_: Enable discontinuous subnet mask summarization.
-  * _not-interface-specific_: Toggles "interface-specific" inside of a term.
-  * _direction_: The direction of the filter on an interface (optional). Use when a term needs this signal.
-  * _interface_: The type of interface on which the filter will be applied (optional). Use when a term needs this signal.
+  * _direction_: The direction of the filter on an interface. Must be specified.
+  * _interface_: The type of interface on which the filter will be applied. Default in physical (non-loopback) interface.
 When _inet4_ or _inet6_ is specified, naming tokens with both IPv4 and IPv6 filters will be rendered using only the specified addresses.
 The default format is _inet4_, and is implied if not other argument is given.
 ## Term Format
 * _action::_ The action to take when matched. See Actions section for valid options.
 * _address::_ One or more network address tokens, matches source or destination.
+* _restrict-address-family::_ Only include the term in the matching address family filter (eg. for mixed filters).
 * _comment::_ A text comment enclosed in double-quotes.  The comment can extend over multiple lines if desired, until a closing quote is encountered.
 * _counter::_ Update a counter for matching packets
 * _destination-address::_ One or more destination address tokens
@@ -47,6 +47,7 @@ The default format is _inet4_, and is implied if not other argument is given.
 * _dscp_set::_ Match a DSCP set.
 * _ether_type::_ Match EtherType field.
 * _expiration::_ stop rendering this term after specified date. [YYYY](YYYY.md)-[MM](MM.md)-[DD](DD.md)
+* _filter-term::_ Include another filter
 * _flexible-match-range Filter based on flexible match options.
 * _forwarding-class::_ Specify the forwarding class to match.
 * _forwarding-class_except::_ Do not match the specified forwarding classes.
@@ -65,6 +66,7 @@ The default format is _inet4_, and is implied if not other argument is given.
 *_platform-exclude:: one or more target platforms for which this term should NEVER be rendered.
 * _policer::_ specify which policer to apply to matching packets.
 * _port::_ Matches on source or destination ports. Takes a service token.
+* _port-mirror::_ Sends copies of the packets to a remote port, boolean value is used to render this config.
 * _precedence::_ specify precedence of range 0-7.  May be a single integer, or a space separated list.
 * _protocol::_ the network protocols this term will match, such as tcp, udp, icmp, or a numeric value.
 * _protocol\_except::_ allow all protocol "except" specified.
@@ -94,3 +96,10 @@ The default format is _inet4_, and is implied if not other argument is given.
 * _tcp-established::_ Only match established tcp connections, based on statefull match or TCP flags. Not supported for other protocols.
 * _tcp-initial::_ Only match initial packet for TCP protocol.
 
+## IPv6 Protocol Match
+For Juniper EVO, the direction of the filter on an interface and the interface type determines the syntax to use; either `next-header`
+or `payload-protocol`. The syntax usage is sumarized below for the extension headers as well as the payload header.
+* _Ingress (Physical)::_ `next-header hop-by-hop` | `next-header fragment` | `next-header routing` | `payload-protocol tcp|udp|ah|esp|icmpv6`
+* _Ingress (Loopback)::_ `payload-protocol 0` | `payload-protocol 44` | `payload-protocol 43` | `payload-protocol tcp|udp|ah|esp|icmpv6`
+* _Egress (Physical)::_ `payload-protocol 0` | `payload-protocol 44` | `payload-protocol 43` | `payload-protocol tcp|udp|ah|esp|icmpv6`
+* _Egress (Loopback)::_ `payload-protocol 0` | `payload-protocol 44` | `payload-protocol 43` | `payload-protocol tcp|udp|ah|esp|icmpv6`

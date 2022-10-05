@@ -436,31 +436,33 @@ The following list contains links to the documentation of the individual policy
 generators:
 
 <!-- begin-generator-term-links -->
-* [`arista`](./doc/generators/arista.md): Arista
-* [`aruba`](./doc/generators/aruba.md): Aruba
-* [`brocade`](./doc/generators/brocade.md): Brocade
-* [`cisco`](./doc/generators/cisco.md): Cisco
-* [`ciscoasa`](./doc/generators/ciscoasa.md): Cisco ASA
-* [`cisconx`](./doc/generators/cisconx.md): Cisco NX
-* [`ciscoxr`](./doc/generators/ciscoxr.md): Cisco XR
-* [`cloudarmor`](./doc/generators/cloudarmor.md): cloudarmor
-* [`gce`](./doc/generators/gce.md): GCE
-* `gcp_hf`
-* [`ipset`](./doc/generators/ipset.md): ipset
-* [`iptables`](./doc/generators/iptables.md): iptables
-* [`juniper`](./doc/generators/juniper.md): Juniper
-* [`junipermsmpc`](./doc/generators/junipermsmpc.md): Juniper
-* [`junipersrx`](./doc/generators/junipersrx.md): Juniper SRX
-* [`nftables`](./doc/generators/nftables.md): nftables
-* [`nsxv`](./doc/generators/nsxv.md): NSX
-* [`packetfilter`](./doc/generators/packetfilter.md): PacketFilter
-* [`paloaltofw`](./doc/generators/paloaltofw.md): Palo Alto PANOS
-* [`pcap`](./doc/generators/pcap.md): PcapFilter
-* [`speedway`](./doc/generators/speedway.md): Speedway
-* [`srxlo`](./doc/generators/srxlo.md): Stateless Juniper ACL
-* [`windows_advfirewall`](./doc/generators/windows_advfirewall.md):
-  Windows Advanced Firewall
-<!-- begin-generator-term-links -->
+
+*   [`arista`](./doc/generators/arista.md): Arista
+*   [`aruba`](./doc/generators/aruba.md): Aruba
+*   [`brocade`](./doc/generators/brocade.md): Brocade
+*   [`cisco`](./doc/generators/cisco.md): Cisco
+*   [`ciscoasa`](./doc/generators/ciscoasa.md): Cisco ASA
+*   [`cisconx`](./doc/generators/cisconx.md): Cisco NX
+*   [`ciscoxr`](./doc/generators/ciscoxr.md): Cisco XR
+*   [`cloudarmor`](./doc/generators/cloudarmor.md): cloudarmor
+*   [`gce`](./doc/generators/gce.md): GCE
+*   `gcp_hf`
+*   [`ipset`](./doc/generators/ipset.md): ipset
+*   [`iptables`](./doc/generators/iptables.md): iptables
+*   [`juniper`](./doc/generators/juniper.md): Juniper
+*   [`juniperevo`](./doc/generators/juniperevo.md): Juniper EVO
+*   [`junipermsmpc`](./doc/generators/junipermsmpc.md): Juniper
+*   [`junipersrx`](./doc/generators/junipersrx.md): Juniper SRX
+*   [`k8s`](./doc/generators/k8s.md): Kubernetes NetworkPolicy
+*   [`nftables`](./doc/generators/nftables.md): nftables
+*   [`nsxv`](./doc/generators/nsxv.md): NSX
+*   [`packetfilter`](./doc/generators/packetfilter.md): PacketFilter
+*   [`paloaltofw`](./doc/generators/paloaltofw.md): Palo Alto PANOS
+*   [`pcap`](./doc/generators/pcap.md): PcapFilter
+*   [`speedway`](./doc/generators/speedway.md): Speedway
+*   [`srxlo`](./doc/generators/srxlo.md): Stateless Juniper ACL
+*   [`windows_advfirewall`](./doc/generators/windows_advfirewall.md): Windows
+    Advanced Firewall <!-- begin-generator-term-links -->
 
 [Back to Top](#table-of-contents)
 
