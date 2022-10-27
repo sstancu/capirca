@@ -247,10 +247,12 @@ class Term(aclgenerator.Term):
         # format of icmp6, and different Juniper flavors, so just keep
         # whatever was given.
         continue
+      elif proto in self.SUPPORTED_PROTOS_BY_NUMBER.values():
+        # Supported protocol name.
+        continue
       elif proto in self.PROTO_MAP:
-        # Ensure string-format protocol is supported in Junos. Get proto number
-        # from common proto map to find corresponding name from Juniper proto
-        # map.
+        # Get proto number from common proto map, then try to find corresponding name from
+        # Juniper proto map.
         proto_num = self.PROTO_MAP[proto]
       else:
         # Protocol was provided in numeric format.

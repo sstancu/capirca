@@ -37,9 +37,41 @@ class Term(juniper.Term):
   _PAYLOAD_PROTOCOL = 'payload-protocol'
   _PAYLOAD_PROTOCOL_EXCEPT = 'payload-protocol-except'
 
+  # For payload-protocol, some protocols can only be provided in number format.
+  SUPPORTED_PAYLOAD_PROTOS_BY_NUMBER = {
+    # 0: 'hop-by-hop',
+    1: 'icmp',
+    2: 'igmp',
+    4: 'ipip',
+    6: 'tcp',
+    8: 'egp',
+    17: 'udp',
+    41: 'ipv6',
+    43: 'routing',
+    # 44: 'fragment',
+    46: 'rsvp',
+    47: 'gre',
+    50: 'esp',
+    51: 'ah',
+    58: 'icmp6',
+    59: 'no-next-header',
+    # 60: 'dstopts',
+    89: 'ospf',
+    103: 'pim',
+    112: 'vrrp',
+    132: 'sctp',
+  }
+
   def __str__(self):
     self._Ipv6ProtocolMatch()
+
+    if self.term_type == self._INET6 and self._TERM_TYPE[self._INET6][self._PROTOCOL] == self._PAYLOAD_PROTOCOL:
+      # If term is inet6 and field being set is payload-protocol, use a different mapping
+      # when processing and validating the protocol value.
+      self.SUPPORTED_PROTOS_BY_NUMBER = self.SUPPORTED_PAYLOAD_PROTOS_BY_NUMBER
+
     term_config = super().__str__()
+
     # Reset to original syntax.
     self._TERM_TYPE[self._INET6][self._PROTOCOL] = self._NEXT_HEADER
     self._TERM_TYPE[self._INET6][
@@ -80,6 +112,8 @@ class Term(juniper.Term):
         if self.interface_type == 'physical':
           if not any(header in self.term.protocol
                      for header in self.extension_headers):
+            # if protocol is one of {hop-by-hop, fragmet}, THEN use next-header
+            # otherwise use payload-protocol
             self._TERM_TYPE[self._INET6][
                 self._PROTOCOL] = self._PAYLOAD_PROTOCOL
 
