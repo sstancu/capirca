@@ -115,6 +115,8 @@ class AclCheck(object):
     self.matches = []
     self.exact_matches = []
     for header, terms in self.pol_obj.filters:
+      if any(target.platform == 'paloalto' for target in header.target):
+        terms = self._IgnoreDynamicPATerms(terms)
       filtername = header.target[0].options[0]
       for term in terms:
         possible = []
@@ -166,6 +168,17 @@ class AclCheck(object):
           self.exact_matches.append(Match(filtername, term.name, [],
                                           term.action, term.qos))
           break
+
+  def _IgnoreDynamicPATerms(self, terms):
+    """
+    Return a list of terms where terms that include references to dynamic
+    PA objects are filtered out, since those would be interpreted by the
+    tool as an "any any" rule (allow or deny any traffic).
+    """
+    return [
+      term for term in terms
+      if not (term.pan_destination_object or term.pan_source_object)
+    ]
 
   def Matches(self):
     """Return list of matched terms."""
