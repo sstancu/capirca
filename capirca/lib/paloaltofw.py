@@ -344,6 +344,7 @@ class PaloAltoFW(aclgenerator.ACLGenerator):
   _MAX_RULE_DESCRIPTION_LENGTH = 1024
   _MAX_TAG_COMMENTS_LENGTH = 1023
   _TAG_NAME_FORMAT = "{from_zone}_{to_zone}_policy-comment-{num}"
+  _IMMUTABLE_ADDRESS_TRANSLATE = str.maketrans('/.:', '-__')
 
   INDENT = "  "
 
@@ -733,21 +734,12 @@ class PaloAltoFW(aclgenerator.ACLGenerator):
 
     if self.use_immutable_address_names:
       # use address as the name of address-objects
-      name = str(address)
-      if address.version == 4:
-        if name == '0.0.0.0/0':
-          # use descriptive name to match ipv6 naming below.
-          name = 'ANY-IPV4'
-        else:
-          name = name.replace('.', '_')
+      if address.prefixlen:
+        name = str(address).translate(self._IMMUTABLE_ADDRESS_TRANSLATE)
       else:
-        if name == '::/0':
-          # 'any ipv6'. On PA address object names cannot start with an underscore,
-          # so use an accepted/descriptive name.
-          name = 'ANY-IPV6'
-        else:
-          name = name.replace(':', '_')
-      name = name.replace('/', '-')
+        # '0.0.0.0/0' or '::/0' -> Since PA does not support object names starting
+        # with '_', use an accepted/clearer name.
+        name = 'ANY-IPV%s' % address.version
     else:
       # suffix address names of the same parent token with a running integer
       counter = len(self.addressbook[zone][address.parent_token])
