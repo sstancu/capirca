@@ -16,6 +16,7 @@ defaults = {
     'shade_check': False,
     'exp_info': 2,
     'immutable_address_names': False,
+    'sort_networks': True,
 }
 
 
@@ -44,6 +45,7 @@ def flags_to_dict(absl_flags):
       'shade_check': absl_flags.shade_check,
       'exp_info': absl_flags.exp_info,
       'immutable_address_names': absl_flags.immutable_address_names,
+      'sort_networks': absl_flags.sort_networks,
   }
 
   return {

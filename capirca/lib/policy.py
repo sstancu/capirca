@@ -49,6 +49,7 @@ _FLEXIBLE_MATCH_START_OPTIONS = {'layer-3', 'layer-4', 'payload'}
 _LOGGING = set(('true', 'True', 'syslog', 'local', 'disable', 'log-both'))
 _OPTIMIZE = True
 _SHADE_CHECK = False
+_SORT_NETWORKS = True
 _MAX_TTL = 255
 _MIN_TTL = 0
 
@@ -224,8 +225,8 @@ class Policy(object):
               'no destination ports of the correct protocol for term %s' % (
                   term.name))
 
-      # If argument is true, we optimize, otherwise just sort addresses
-      term.AddressCleanup(_OPTIMIZE, self._NeedsAddressBook())
+      # If argument is true, we optimize, or sort (or not) addresses
+      term.AddressCleanup(_OPTIMIZE, _SORT_NETWORKS, self._NeedsAddressBook())
       term.SanityCheck()
       term.translated = True
 
@@ -1363,7 +1364,7 @@ class Term(object):
         raise InvalidTermTTLValue('Term %s contains invalid TTL: %s'
                                   % (self.name, self.ttl))
 
-  def AddressCleanup(self, optimize=True, addressbook=False):
+  def AddressCleanup(self, optimize=True, sort=True, addressbook=False):
     """Do Address and Port collapsing.
 
     Notes:
@@ -1372,11 +1373,15 @@ class Term(object):
 
     Args:
       optimize: boolean value indicating whether to optimize addresses
+      sort: boolean value indicating whether to sort addresses (if no optimize)
       addressbook: Boolean indicating if addressbook is used.
     """
     def cleanup(addresses, complement_addresses):
       if not optimize:
-        return nacaddr.SortAddrList(addresses)
+        if sort:
+          return nacaddr.SortAddrList(addresses)
+        else:
+          return addresses
       if addressbook:
         return nacaddr.CollapseAddrListPreserveTokens(addresses)
       else:
@@ -2680,7 +2685,7 @@ def ParseFile(filename, definitions=None, optimize=True, base_dir='',
 
 
 def ParsePolicy(data, definitions=None, optimize=True, base_dir='',
-                shade_check=False, filename=''):
+                shade_check=False, filename='', sort_networks=True):
   """Parse the policy in 'data', optionally provide a naming object.
 
   Parse a blob of policy text into a policy object.
@@ -2703,6 +2708,7 @@ def ParsePolicy(data, definitions=None, optimize=True, base_dir='',
       globals()['DEFINITIONS'] = naming.Naming(DEFAULT_DEFINITIONS)
     globals()['_OPTIMIZE'] = optimize
     globals()['_SHADE_CHECK'] = shade_check
+    globals()['_SORT_NETWORKS'] = sort_networks
 
     lexer = lex.lex()
 

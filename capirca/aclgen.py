@@ -135,6 +135,11 @@ def SetupFlags():
       None,
       'Use network address value as address name for platforms that support it.\n(default: \'%s\')'
       % config.defaults['immutable_address_names'])
+  flags.DEFINE_boolean(
+      'sort_networks',
+      None,
+      'Sort the networks within a network entry in the definitions file.\n(default: \'%s\')'
+      % config.defaults['sort_networks'])
 
 
 class Error(Exception):
@@ -169,7 +174,7 @@ def SkipLines(text, skip_line_func=False):
 
 
 def RenderFile(base_directory, input_file, output_directory, definitions,
-               exp_info, optimize, shade_check, write_files):
+               exp_info, optimize, shade_check, sort_networks, write_files):
   """Render a single file.
 
   Args:
@@ -181,6 +186,7 @@ def RenderFile(base_directory, input_file, output_directory, definitions,
               in that many weeks.
     optimize: a boolean indicating if we should turn on optimization or not.
     shade_check: should we raise an error if a term is completely shaded
+    sort_networks: sort networks definitions file or not.
     write_files: a list of file tuples, (output_file, acl_text), to write
   """
   logging.debug('rendering file: %s into %s', input_file,
@@ -224,7 +230,8 @@ def RenderFile(base_directory, input_file, output_directory, definitions,
   try:
     pol = policy.ParsePolicy(
         conf, definitions, optimize=optimize,
-        base_dir=base_directory, shade_check=shade_check)
+        base_dir=base_directory, shade_check=shade_check,
+        sort_networks=sort_networks)
   except policy.ShadingError as e:
     logging.warning('shading errors for %s:\n%s', input_file, e)
     return
@@ -566,6 +573,7 @@ def Run(
     ignore_directories,
     optimize,
     shade_check,
+    sort_networks,
     context
 ):
   definitions = None
@@ -591,6 +599,7 @@ def Run(
         exp_info,
         optimize,
         shade_check,
+        sort_networks,
         write_files)
   else:
     # render all files in parallel
@@ -676,6 +685,7 @@ def main(argv):
       configs['ignore_directories'],
       configs['optimize'],
       configs['shade_check'],
+      configs['sort_networks'],
       context
   )
 
