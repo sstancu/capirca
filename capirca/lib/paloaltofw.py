@@ -726,11 +726,12 @@ class PaloAltoFW(aclgenerator.ACLGenerator):
     if zone not in self.addressbook:
       self.addressbook[zone] = collections.OrderedDict()
     if address.parent_token not in self.addressbook[zone]:
-      self.addressbook[zone][address.parent_token] = []
+      # Store addresses as keys to enable quick lookups.
+      # key: address, value: name
+      self.addressbook[zone][address.parent_token] = {}  # Python > 3.7 (or 3.6 for CPython implementations)
     name = address.parent_token
-    for ip in self.addressbook[zone][name]:
-      if str(address) == str(ip[0]):
-        return
+    if address in self.addressbook[zone][name]:
+      return
 
     if self.use_immutable_address_names:
       # use address as the name of address-objects
@@ -745,7 +746,7 @@ class PaloAltoFW(aclgenerator.ACLGenerator):
       counter = len(self.addressbook[zone][address.parent_token])
       name = "%s_%s" % (name, str(counter))
 
-    self.addressbook[zone][address.parent_token].append((address, name))
+    self.addressbook[zone][address.parent_token][address] = name
 
   def _SortAddressBookNumCheck(self, item):
     """Used to give a natural order to the list of acl entries.
@@ -806,7 +807,7 @@ class PaloAltoFW(aclgenerator.ACLGenerator):
       # building individual addresses dictionary
       groups = sorted(self.addressbook[zone])
       for group in groups:
-        for address, name in self.addressbook[zone][group]:
+        for address, name in self.addressbook[zone][group].items():
           if name in address_book_names_dict:
             if address_book_names_dict[name].supernet_of(address):
               continue
@@ -815,7 +816,7 @@ class PaloAltoFW(aclgenerator.ACLGenerator):
         # building individual address-group dictionary
         for nested_group in groups:
           group_names = []
-          for address, name in self.addressbook[zone][nested_group]:
+          for address, name in self.addressbook[zone][nested_group].items():
             group_names.append(name)
           address_book_groups_dict[nested_group] = group_names
 
